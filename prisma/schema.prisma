@@ -1,0 +1,33 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Purchase {
+  id              String   @id @default(cuid())
+  email           String
+  xHandle         String?  @map("x_handle")
+  appName         String   @map("app_name") @db.VarChar(50)
+  appUrl          String?  @map("app_url")
+  description     String?  @db.VarChar(140)
+  thumbnailUrl    String?  @map("thumbnail_url")
+  blocksXStart    Int      @map("blocks_x_start")
+  blocksYStart    Int      @map("blocks_y_start")
+  blocksXEnd      Int      @map("blocks_x_end")
+  blocksYEnd      Int      @map("blocks_y_end")
+  blockCount      Int      @map("block_count")
+  pricePerBlock   Int      @map("price_per_block")
+  totalPrice      Int      @map("total_price")
+  stripeSessionId String?  @unique @map("stripe_session_id")
+  status          String   @default("pending")
+  color           String   @default("#3B82F6")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@index([status])
+  @@map("purchases")
+}
