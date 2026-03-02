@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getStripe } from "@/lib/stripe";
-import { getPricePerBlock } from "@/lib/pricing";
-import { getRandomColor, GRID_WIDTH, GRID_HEIGHT } from "@/lib/grid";
+import { getTilePrice } from "@/lib/pricing";
+import { getRandomColor, GRID_WIDTH, GRID_HEIGHT, TILE_SIZES, type TileSizeId } from "@/lib/grid";
+
+const VALID_TILE_SIZES = TILE_SIZES.map((t) => t.id);
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,13 +16,13 @@ export async function POST(request: NextRequest) {
       xHandle,
       description,
       thumbnailUrl,
+      tileSize,
       blocksXStart,
       blocksYStart,
       blocksXEnd,
       blocksYEnd,
     } = body;
 
-    // Validate required fields
     if (!email || !appName) {
       return NextResponse.json(
         { error: "Email and app name are required" },
@@ -28,7 +30,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate coordinates
+    if (!tileSize || !VALID_TILE_SIZES.includes(tileSize)) {
+      return NextResponse.json(
+        { error: "Invalid tile size" },
+        { status: 400 }
+      );
+    }
+
+    const tileDef = TILE_SIZES.find((t) => t.id === tileSize)!;
+    const expectedBlocks = tileDef.blocks;
+
+    // Validate tile dimensions match declared size
+    if (
+      blocksXEnd - blocksXStart + 1 !== expectedBlocks ||
+      blocksYEnd - blocksYStart + 1 !== expectedBlocks
+    ) {
+      return NextResponse.json(
+        { error: "Tile dimensions don't match declared size" },
+        { status: 400 }
+      );
+    }
+
     if (
       blocksXStart < 0 || blocksXEnd >= GRID_WIDTH ||
       blocksYStart < 0 || blocksYEnd >= GRID_HEIGHT ||
@@ -40,8 +62,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const blockCount =
-      (blocksXEnd - blocksXStart + 1) * (blocksYEnd - blocksYStart + 1);
+    const blockCount = expectedBlocks * expectedBlocks;
 
     // Expire old pending purchases
     await prisma.purchase.updateMany({
@@ -52,7 +73,6 @@ export async function POST(request: NextRequest) {
       data: { status: "expired" },
     });
 
-    // Check for overlaps in a transaction
     const purchase = await prisma.$transaction(async (tx) => {
       const overlapping = await tx.purchase.findFirst({
         where: {
@@ -68,13 +88,21 @@ export async function POST(request: NextRequest) {
         throw new Error("BLOCKS_TAKEN");
       }
 
-      // Calculate price
+      // Check XL cap
+      if (tileSize === "xl") {
+        const xlCount = await tx.purchase.count({
+          where: { tileSize: "xl", status: { in: ["pending", "paid"] } },
+        });
+        if (xlCount >= (tileDef.maxTotal ?? 25)) {
+          throw new Error("XL_SOLD_OUT");
+        }
+      }
+
       const totalClaimed = await tx.purchase.aggregate({
         where: { status: "paid" },
         _sum: { blockCount: true },
       });
-      const pricePerBlock = getPricePerBlock(totalClaimed._sum.blockCount || 0);
-      const totalPrice = blockCount * pricePerBlock;
+      const tilePrice = getTilePrice(totalClaimed._sum.blockCount || 0, tileSize as TileSizeId);
 
       return tx.purchase.create({
         data: {
@@ -89,15 +117,15 @@ export async function POST(request: NextRequest) {
           blocksXEnd,
           blocksYEnd,
           blockCount,
-          pricePerBlock,
-          totalPrice,
+          tileSize,
+          pricePerBlock: tilePrice,
+          totalPrice: tilePrice,
           color: getRandomColor(),
           status: "pending",
         },
       });
     });
 
-    // Create Stripe Checkout Session
     const session = await getStripe().checkout.sessions.create({
       payment_method_types: ["card"],
       line_items: [
@@ -105,12 +133,12 @@ export async function POST(request: NextRequest) {
           price_data: {
             currency: "usd",
             product_data: {
-              name: `VibeGrid - ${blockCount} block${blockCount > 1 ? "s" : ""}`,
+              name: `VibeGrid ${tileDef.label} Tile (${tileDef.pixels}\u00D7${tileDef.pixels}px)`,
               description: `Claim your spot on VibeGrid for "${appName}"`,
             },
-            unit_amount: purchase.pricePerBlock,
+            unit_amount: purchase.totalPrice,
           },
-          quantity: blockCount,
+          quantity: 1,
         },
       ],
       mode: "payment",
@@ -122,7 +150,6 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Update purchase with stripe session ID
     await prisma.purchase.update({
       where: { id: purchase.id },
       data: { stripeSessionId: session.id },
@@ -133,11 +160,19 @@ export async function POST(request: NextRequest) {
       purchaseId: purchase.id,
     });
   } catch (error: unknown) {
-    if (error instanceof Error && error.message === "BLOCKS_TAKEN") {
-      return NextResponse.json(
-        { error: "Some of the selected blocks are already taken. Please select a different area." },
-        { status: 409 }
-      );
+    if (error instanceof Error) {
+      if (error.message === "BLOCKS_TAKEN") {
+        return NextResponse.json(
+          { error: "This area is already taken. Please place your tile elsewhere." },
+          { status: 409 }
+        );
+      }
+      if (error.message === "XL_SOLD_OUT") {
+        return NextResponse.json(
+          { error: "All XL spots have been claimed." },
+          { status: 409 }
+        );
+      }
     }
     console.error("Checkout error:", error);
     return NextResponse.json(

@@ -20,6 +20,7 @@ model Purchase {
   blocksXEnd      Int      @map("blocks_x_end")
   blocksYEnd      Int      @map("blocks_y_end")
   blockCount      Int      @map("block_count")
+  tileSize        String   @default("small") @map("tile_size") @db.VarChar(10)
   pricePerBlock   Int      @map("price_per_block")
   totalPrice      Int      @map("total_price")
   stripeSessionId String?  @unique @map("stripe_session_id")

@@ -5,11 +5,11 @@ import { formatPrice } from "@/lib/pricing";
 
 interface HeaderProps {
   totalClaimed: number;
-  pricePerBlock: number;
-  tierLabel: string;
+  phaseLabel: string;
+  smallPrice: number;
 }
 
-export default function Header({ totalClaimed, pricePerBlock, tierLabel }: HeaderProps) {
+export default function Header({ totalClaimed, phaseLabel, smallPrice }: HeaderProps) {
   const percent = ((totalClaimed / TOTAL_BLOCKS) * 100).toFixed(1);
 
   return (
@@ -20,7 +20,7 @@ export default function Header({ totalClaimed, pricePerBlock, tierLabel }: Heade
           <span className="text-green-400">Grid</span>
         </h1>
         <span className="hidden sm:inline-block text-xs text-gray-500 border border-gray-800 rounded-full px-2 py-0.5">
-          {tierLabel} Phase
+          {phaseLabel} Phase
         </span>
       </div>
 
@@ -35,12 +35,10 @@ export default function Header({ totalClaimed, pricePerBlock, tierLabel }: Heade
         </div>
 
         <div className="flex items-center gap-1.5">
-          <span className="text-gray-500 text-xs">Price:</span>
-          <span className="text-green-400 font-bold">{formatPrice(pricePerBlock)}</span>
-          <span className="text-gray-600 text-xs">/block</span>
+          <span className="text-gray-500 text-xs">From</span>
+          <span className="text-green-400 font-bold">{formatPrice(smallPrice)}</span>
         </div>
 
-        {/* Progress bar */}
         <div className="hidden md:block w-24 h-1.5 bg-gray-800 rounded-full overflow-hidden">
           <div
             className="h-full bg-gradient-to-r from-green-500 to-emerald-400 rounded-full transition-all duration-500"

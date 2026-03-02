@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getCurrentTier } from "@/lib/pricing";
+import { getCurrentPhase } from "@/lib/pricing";
+import { TOTAL_BLOCKS } from "@/lib/grid";
 
 export async function GET() {
   const purchases = await prisma.purchase.findMany({
@@ -17,6 +18,7 @@ export async function GET() {
       blocksXEnd: true,
       blocksYEnd: true,
       blockCount: true,
+      tileSize: true,
       color: true,
       createdAt: true,
     },
@@ -24,7 +26,9 @@ export async function GET() {
   });
 
   const totalClaimed = purchases.reduce((sum, p) => sum + p.blockCount, 0);
-  const tier = getCurrentTier(totalClaimed);
+  const xlCount = purchases.filter((p) => p.tileSize === "xl").length;
+  const phase = getCurrentPhase(totalClaimed);
+  const percentFilled = Math.round((totalClaimed / TOTAL_BLOCKS) * 10000) / 100;
 
   return NextResponse.json(
     {
@@ -33,10 +37,11 @@ export async function GET() {
         createdAt: p.createdAt.toISOString(),
       })),
       totalClaimed,
-      totalBlocks: tier.totalBlocks,
-      pricePerBlock: tier.pricePerBlock,
-      percentFilled: tier.percentFilled,
-      tierLabel: tier.label,
+      totalBlocks: TOTAL_BLOCKS,
+      percentFilled,
+      phaseLabel: phase.label,
+      xlCount,
+      prices: phase.prices,
     },
     {
       headers: {

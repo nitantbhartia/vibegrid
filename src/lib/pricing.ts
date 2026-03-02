@@ -1,35 +1,27 @@
-import { TOTAL_BLOCKS } from "./grid";
+import { TOTAL_BLOCKS, type TileSizeId } from "./grid";
 
-export const PRICING_TIERS = [
-  { maxPercent: 5, pricePerBlock: 100, label: "Genesis" },
-  { maxPercent: 15, pricePerBlock: 300, label: "Early" },
-  { maxPercent: 30, pricePerBlock: 500, label: "Growth" },
-  { maxPercent: 50, pricePerBlock: 1000, label: "Momentum" },
-  { maxPercent: 75, pricePerBlock: 2000, label: "Premium" },
-  { maxPercent: 100, pricePerBlock: 5000, label: "Final" },
-];
-
-export function getPricePerBlock(claimedBlocks: number): number {
-  const percent = (claimedBlocks / TOTAL_BLOCKS) * 100;
-  for (const tier of PRICING_TIERS) {
-    if (percent < tier.maxPercent) {
-      return tier.pricePerBlock;
-    }
-  }
-  return PRICING_TIERS[PRICING_TIERS.length - 1].pricePerBlock;
+export interface PricingPhase {
+  label: string;
+  maxPercent: number;
+  prices: Record<TileSizeId, number>;
 }
 
-export function getCurrentTier(claimedBlocks: number) {
+export const PRICING_PHASES: PricingPhase[] = [
+  { label: "Genesis", maxPercent: 10, prices: { small: 500, medium: 1500, large: 3500, xl: 7500 } },
+  { label: "Early", maxPercent: 25, prices: { small: 900, medium: 2500, large: 5900, xl: 12900 } },
+  { label: "Growth", maxPercent: 50, prices: { small: 1500, medium: 3900, large: 8900, xl: 19900 } },
+  { label: "Premium", maxPercent: 75, prices: { small: 2500, medium: 5900, large: 14900, xl: 34900 } },
+  { label: "Final", maxPercent: 100, prices: { small: 4900, medium: 9900, large: 24900, xl: 59900 } },
+];
+
+export function getCurrentPhase(claimedBlocks: number): PricingPhase {
   const percent = (claimedBlocks / TOTAL_BLOCKS) * 100;
-  const tier =
-    PRICING_TIERS.find((t) => percent < t.maxPercent) ??
-    PRICING_TIERS[PRICING_TIERS.length - 1];
-  return {
-    ...tier,
-    percentFilled: Math.round(percent * 100) / 100,
-    totalClaimed: claimedBlocks,
-    totalBlocks: TOTAL_BLOCKS,
-  };
+  return PRICING_PHASES.find((p) => percent < p.maxPercent) ?? PRICING_PHASES[PRICING_PHASES.length - 1];
+}
+
+export function getTilePrice(claimedBlocks: number, tileSize: TileSizeId): number {
+  const phase = getCurrentPhase(claimedBlocks);
+  return phase.prices[tileSize];
 }
 
 export function formatPrice(cents: number): string {

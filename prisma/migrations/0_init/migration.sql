@@ -12,6 +12,7 @@ CREATE TABLE "purchases" (
     "blocks_x_end" INTEGER NOT NULL,
     "blocks_y_end" INTEGER NOT NULL,
     "block_count" INTEGER NOT NULL,
+    "tile_size" VARCHAR(10) NOT NULL DEFAULT 'small',
     "price_per_block" INTEGER NOT NULL,
     "total_price" INTEGER NOT NULL,
     "stripe_session_id" TEXT,

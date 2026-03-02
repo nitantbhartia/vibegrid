@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { useGridData } from "@/hooks/useGridData";
+import { TILE_SIZES, type TileSizeId } from "@/lib/grid";
 import Header from "@/components/Header";
 import GridControls from "@/components/GridControls";
 import BlockTooltip from "@/components/BlockTooltip";
@@ -25,7 +26,7 @@ const GridCanvas = dynamic(() => import("@/components/GridCanvas"), {
 export default function Home() {
   const { gridState, isLoading } = useGridData();
   const [selection, setSelection] = useState<Selection | null>(null);
-  const [selectMode, setSelectMode] = useState(false);
+  const [selectedTileSize, setSelectedTileSize] = useState<TileSizeId | null>(null);
   const [tooltip, setTooltip] = useState<{
     purchase: GridPurchase | null;
     x: number;
@@ -34,8 +35,14 @@ export default function Home() {
 
   const purchases = gridState?.purchases ?? [];
   const totalClaimed = gridState?.totalClaimed ?? 0;
-  const pricePerBlock = gridState?.pricePerBlock ?? 100;
-  const tierLabel = gridState?.tierLabel ?? "Genesis";
+  const percentFilled = gridState?.percentFilled ?? 0;
+  const phaseLabel = gridState?.phaseLabel ?? "Genesis";
+  const xlCount = gridState?.xlCount ?? 0;
+  const prices = gridState?.prices ?? { small: 500, medium: 1500, large: 3500, xl: 7500 };
+
+  const activeTileBlocks = selectedTileSize
+    ? TILE_SIZES.find((t) => t.id === selectedTileSize)?.blocks ?? null
+    : null;
 
   const handleBlockHover = useCallback(
     (purchase: GridPurchase | null, x: number, y: number) => {
@@ -50,12 +57,14 @@ export default function Home() {
     }
   }, []);
 
-  const handleToggleSelectMode = useCallback(() => {
-    setSelectMode((m) => !m);
-    if (selectMode) {
-      setSelection(null);
-    }
-  }, [selectMode]);
+  const handleSelectTileSize = useCallback((tileId: TileSizeId | null) => {
+    setSelectedTileSize(tileId);
+    setSelection(null);
+  }, []);
+
+  const handleClearSelection = useCallback(() => {
+    setSelection(null);
+  }, []);
 
   const handleZoomIn = useCallback(() => {
     window.dispatchEvent(new CustomEvent("vibegrid:zoom", { detail: 1.3 }));
@@ -86,24 +95,21 @@ export default function Home() {
     <div className="h-screen flex flex-col overflow-hidden">
       <Header
         totalClaimed={totalClaimed}
-        pricePerBlock={pricePerBlock}
-        tierLabel={tierLabel}
+        phaseLabel={phaseLabel}
+        smallPrice={prices.small}
       />
 
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
-        {/* Grid Area */}
         <div className="flex-1 relative min-h-[50vh] md:min-h-0">
           <GridCanvas
             purchases={purchases}
             selection={selection}
             onSelectionChange={setSelection}
-            selectMode={selectMode}
+            activeTileBlocks={activeTileBlocks}
             onBlockHover={handleBlockHover}
             onBlockClick={handleBlockClick}
           />
           <GridControls
-            selectMode={selectMode}
-            onToggleSelectMode={handleToggleSelectMode}
             onZoomIn={handleZoomIn}
             onZoomOut={handleZoomOut}
             onResetView={handleResetView}
@@ -115,18 +121,17 @@ export default function Home() {
           />
         </div>
 
-        {/* Sidebar */}
         <div className="w-full md:w-[340px] border-t md:border-t-0 md:border-l border-white/5 bg-[#030712] flex flex-col overflow-y-auto max-h-[50vh] md:max-h-full">
           <PurchasePanel
             selection={selection}
-            pricePerBlock={pricePerBlock}
+            selectedTileSize={selectedTileSize}
+            onSelectTileSize={handleSelectTileSize}
             totalClaimed={totalClaimed}
-            onClearSelection={() => {
-              setSelection(null);
-              setSelectMode(false);
-            }}
-            onStartSelect={() => setSelectMode(true)}
-            selectMode={selectMode}
+            percentFilled={percentFilled}
+            phaseLabel={phaseLabel}
+            xlCount={xlCount}
+            prices={prices}
+            onClearSelection={handleClearSelection}
           />
           <RecentPurchases purchases={purchases} />
         </div>

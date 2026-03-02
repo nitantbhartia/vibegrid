@@ -1,3 +1,5 @@
+import type { TileSizeId } from "@/lib/grid";
+
 export interface GridPurchase {
   id: string;
   appName: string;
@@ -10,6 +12,7 @@ export interface GridPurchase {
   blocksXEnd: number;
   blocksYEnd: number;
   blockCount: number;
+  tileSize: string;
   color: string;
   createdAt: string;
 }
@@ -18,9 +21,10 @@ export interface GridState {
   purchases: GridPurchase[];
   totalClaimed: number;
   totalBlocks: number;
-  pricePerBlock: number;
   percentFilled: number;
-  tierLabel: string;
+  phaseLabel: string;
+  xlCount: number;
+  prices: Record<TileSizeId, number>;
 }
 
 export interface Selection {
