@@ -73,19 +73,42 @@ export default function GridCanvas({
     ctx.fillStyle = "#06080f";
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-    // Draw subtle grid pattern
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.03)";
-    ctx.lineWidth = 0.5;
-    ctx.beginPath();
-    for (let x = 0; x <= CANVAS_WIDTH; x += BLOCK_SIZE) {
-      ctx.moveTo(x, 0);
-      ctx.lineTo(x, CANVAS_HEIGHT);
+    // Draw dot grid pattern at every block intersection
+    for (let gx = 0; gx <= GRID_WIDTH; gx++) {
+      for (let gy = 0; gy <= GRID_HEIGHT; gy++) {
+        const px = gx * BLOCK_SIZE;
+        const py = gy * BLOCK_SIZE;
+        // Larger, brighter dots every 10 blocks
+        if (gx % 10 === 0 && gy % 10 === 0) {
+          ctx.fillStyle = "rgba(255, 255, 255, 0.18)";
+          ctx.beginPath();
+          ctx.arc(px, py, 1.5, 0, Math.PI * 2);
+          ctx.fill();
+        } else {
+          ctx.fillStyle = "rgba(255, 255, 255, 0.07)";
+          ctx.fillRect(px, py, 1, 1);
+        }
+      }
     }
-    for (let y = 0; y <= CANVAS_HEIGHT; y += BLOCK_SIZE) {
-      ctx.moveTo(0, y);
-      ctx.lineTo(CANVAS_WIDTH, y);
+
+    // Draw coordinate labels every 20 blocks along edges
+    ctx.fillStyle = "rgba(255, 255, 255, 0.2)";
+    ctx.font = "7px system-ui";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "bottom";
+    for (let gx = 0; gx <= GRID_WIDTH; gx += 20) {
+      ctx.fillText(`${gx}`, gx * BLOCK_SIZE, -2);
     }
-    ctx.stroke();
+    ctx.textAlign = "right";
+    ctx.textBaseline = "middle";
+    for (let gy = 0; gy <= GRID_HEIGHT; gy += 20) {
+      ctx.fillText(`${gy}`, -4, gy * BLOCK_SIZE);
+    }
+
+    // Draw grid boundary
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.12)";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
     // Draw claimed blocks
     for (const p of purchases) {
@@ -201,16 +224,17 @@ export default function GridCanvas({
       ctx.strokeRect(sx, sy, sw, sh);
       ctx.setLineDash([]);
 
-      // Block count label
-      const blockCount = (selection.endX - selection.startX + 1) * (selection.endY - selection.startY + 1);
+      // Block count label with dimensions
+      const selW = selection.endX - selection.startX + 1;
+      const selH = selection.endY - selection.startY + 1;
+      const blockCount = selW * selH;
       ctx.fillStyle = hasConflict ? "#ef4444" : "#22c55e";
       ctx.font = "bold 14px system-ui";
       ctx.textAlign = "center";
-      ctx.fillText(
-        `${blockCount} block${blockCount > 1 ? "s" : ""}`,
-        sx + sw / 2,
-        sy - 8
-      );
+      const label = blockCount > 1
+        ? `${selW}×${selH} = ${blockCount} blocks`
+        : "1 block";
+      ctx.fillText(label, sx + sw / 2, sy - 8);
     }
   }, [selection]);
 
@@ -301,19 +325,39 @@ export default function GridCanvas({
     [selectMode, screenToBlock, onSelectionChange]
   );
 
+  // Clamp coords to grid and cap selection to max 50x50 blocks
+  const clampSelection = useCallback(
+    (rawBlock: { x: number; y: number }) => {
+      const MAX_SIDE = 50;
+      const s = selectStart.current;
+      const bx = Math.max(0, Math.min(GRID_WIDTH - 1, rawBlock.x));
+      const by = Math.max(0, Math.min(GRID_HEIGHT - 1, rawBlock.y));
+      // Clamp so selection never exceeds MAX_SIDE in either dimension
+      const clampedX = Math.max(s.x - MAX_SIDE + 1, Math.min(s.x + MAX_SIDE - 1, bx));
+      const clampedY = Math.max(s.y - MAX_SIDE + 1, Math.min(s.y + MAX_SIDE - 1, by));
+      return { x: clampedX, y: clampedY };
+    },
+    []
+  );
+
   const handlePointerMove = useCallback(
     (e: React.PointerEvent) => {
       if (isSelecting.current) {
-        const block = screenToBlock(e.clientX, e.clientY);
-        if (block) {
-          const s = selectStart.current;
-          onSelectionChange({
-            startX: Math.min(s.x, block.x),
-            startY: Math.min(s.y, block.y),
-            endX: Math.max(s.x, block.x),
-            endY: Math.max(s.y, block.y),
-          });
-        }
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const rawX = Math.floor((x - offsetRef.current.x) / scaleRef.current / BLOCK_SIZE);
+        const rawY = Math.floor((y - offsetRef.current.y) / scaleRef.current / BLOCK_SIZE);
+        const block = clampSelection({ x: rawX, y: rawY });
+        const s = selectStart.current;
+        onSelectionChange({
+          startX: Math.min(s.x, block.x),
+          startY: Math.min(s.y, block.y),
+          endX: Math.max(s.x, block.x),
+          endY: Math.max(s.y, block.y),
+        });
       } else if (isDragging.current) {
         const newOffset = {
           x: e.clientX - dragStart.current.x,
@@ -332,7 +376,7 @@ export default function GridCanvas({
         }
       }
     },
-    [screenToBlock, onSelectionChange, onBlockHover]
+    [screenToBlock, clampSelection, onSelectionChange, onBlockHover]
   );
 
   const handlePointerUp = useCallback(
