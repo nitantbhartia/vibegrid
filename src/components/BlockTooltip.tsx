@@ -16,25 +16,24 @@ export default function BlockTooltip({ purchase, x, y }: BlockTooltipProps) {
       className="fixed z-50 pointer-events-none"
       style={{ left: x + 12, top: y - 8 }}
     >
-      <div className="bg-gray-900 border border-gray-700 rounded-lg shadow-xl px-3 py-2 max-w-[200px]">
-        <div className="flex items-center gap-2 mb-1">
+      <div className="retro-tooltip">
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.25rem" }}>
           <div
-            className="w-2.5 h-2.5 rounded-sm flex-shrink-0"
-            style={{ backgroundColor: purchase.color }}
+            style={{ width: 10, height: 10, flexShrink: 0, backgroundColor: purchase.color }}
           />
-          <span className="text-sm font-semibold text-white truncate">
+          <span style={{ fontSize: "1.1rem", fontWeight: "bold", color: "#FFAC00" }}>
             {purchase.appName}
           </span>
         </div>
         {purchase.xHandle && (
-          <p className="text-xs text-gray-400">@{purchase.xHandle}</p>
+          <p style={{ fontSize: "0.9rem", color: "#cc8a00" }}>@{purchase.xHandle}</p>
         )}
         {purchase.description && (
-          <p className="text-xs text-gray-500 mt-1 line-clamp-2">
+          <p style={{ fontSize: "0.9rem", color: "#cc8a00", marginTop: "0.25rem" }}>
             {purchase.description}
           </p>
         )}
-        <p className="text-xs text-gray-600 mt-1">
+        <p style={{ fontSize: "0.85rem", color: "#cc8a00", marginTop: "0.25rem" }}>
           {purchase.blockCount} block{purchase.blockCount > 1 ? "s" : ""}
         </p>
       </div>

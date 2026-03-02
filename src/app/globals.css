@@ -1,51 +1,363 @@
 @import "tailwindcss";
 
 @theme inline {
-  --color-background: #030712;
-  --color-foreground: #f9fafb;
-  --color-surface: #111827;
-  --color-surface-hover: #1f2937;
-  --color-border: #1f2937;
-  --color-muted: #6b7280;
-  --color-accent: #22c55e;
-  --color-accent-hover: #16a34a;
-  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --font-mono: ui-monospace, "Cascadia Code", "Fira Code", monospace;
+  --color-background: #AA0082;
+  --color-foreground: #FFAC00;
+  --color-surface: rgba(0, 0, 0, 0.3);
+  --color-surface-hover: rgba(0, 0, 0, 0.5);
+  --color-border: #FFAC00;
+  --color-muted: #cc8a00;
+  --color-accent: #FFAC00;
+  --color-accent-hover: #fff;
+  --font-sans: 'VT323', monospace;
+  --font-mono: 'VT323', monospace;
+}
+
+/* === BASE === */
+* {
+  box-sizing: border-box;
+  -webkit-font-smoothing: none;
 }
 
 body {
-  background: var(--color-background);
-  color: var(--color-foreground);
-  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #AA0082;
+  color: #FFAC00;
+  font-family: 'VT323', monospace;
+  overflow-x: hidden;
+  line-height: 1.2;
+  min-height: 100vh;
 }
 
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-}
-::-webkit-scrollbar-track {
-  background: var(--color-surface);
-}
-::-webkit-scrollbar-thumb {
-  background: var(--color-border);
-  border-radius: 3px;
-}
-
-/* Grid glow effect */
-@keyframes pulse-glow {
-  0%, 100% { opacity: 0.6; }
-  50% { opacity: 1; }
+/* CRT noise overlay */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.15;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
 }
 
-.animate-pulse-glow {
-  animation: pulse-glow 2s ease-in-out infinite;
+a { color: inherit; text-decoration: none; }
+
+p {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
 }
 
-/* Selection dashed border animation */
-@keyframes dash-march {
-  to { stroke-dashoffset: -16; }
+/* === LAYOUT === */
+.layout-frame {
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
 }
 
-.animate-dash {
-  animation: dash-march 0.5s linear infinite;
+/* === HEADER === */
+.retro-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 1.2rem;
+  margin-bottom: 4rem;
+  letter-spacing: 1px;
+  border-bottom: 2px solid #FFAC00;
+  padding-bottom: 1rem;
+}
+.retro-header span { display: block; }
+.brand-logo {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 1rem;
+}
+
+/* === HERO === */
+.hero {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4rem;
+  margin-bottom: 6rem;
+  align-items: center;
+}
+.hero-text {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 2.5rem;
+  line-height: 1.5;
+  text-transform: uppercase;
+}
+.highlight-word {
+  color: #AA0082;
+  background: #FFAC00;
+  padding: 0 0.5rem;
+  display: inline-block;
+}
+.hero-subtitle {
+  font-family: 'VT323', monospace;
+  font-size: 1.2rem;
+  margin-top: 2rem;
+  text-transform: none;
+  max-width: 90%;
+  line-height: 1.6;
+}
+
+/* === GRID CANVAS === */
+.grid-canvas-container {
+  border: 4px solid #FFAC00;
+  background: rgba(0, 0, 0, 0.2);
+  position: relative;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  box-shadow: 8px 8px 0px rgba(0, 0, 0, 0.3);
+}
+/* Remove rounded corners from GridCanvas child */
+.grid-canvas-container > div:first-child {
+  border-radius: 0 !important;
+}
+.pixel-corner {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background: #FFAC00;
+  z-index: 10;
+  pointer-events: none;
+}
+
+/* === BUTTONS === */
+.btn-primary {
+  display: inline-block;
+  padding: 1rem;
+  background: transparent;
+  border: 2px solid #FFAC00;
+  color: #FFAC00;
+  font-family: 'Press Start 2P', cursive;
+  font-size: 0.7rem;
+  text-align: center;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: all 0.1s steps(2);
+  line-height: 1.4;
+}
+.btn-primary:hover {
+  background: #FFAC00;
+  color: #AA0082;
+}
+.btn-primary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.btn-primary:disabled:hover {
+  background: transparent;
+  color: #FFAC00;
+}
+
+/* === PRICING === */
+.pricing-section { margin-top: 4rem; }
+.section-header {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 1.2rem;
+  margin-bottom: 2rem;
+  border-top: 2px solid #FFAC00;
+  padding-top: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2rem;
+}
+.pricing-card {
+  border: 2px solid #FFAC00;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+  transition: transform 0.1s;
+}
+.pricing-card:hover {
+  background: #FFAC00;
+  color: #AA0082;
+  cursor: crosshair;
+}
+.pricing-card:hover .btn-primary {
+  background: #AA0082;
+  color: #FFAC00;
+  border-color: #AA0082;
+}
+.pricing-card.highlighted {
+  background: #FFAC00;
+  color: #AA0082;
+}
+.pricing-card.highlighted .tier-name {
+  border-bottom: 2px solid #AA0082;
+  padding-bottom: 0.5rem;
+  margin-bottom: 1rem;
+}
+.pricing-card.highlighted .btn-primary {
+  background: #AA0082;
+  color: #FFAC00;
+  border-color: #AA0082;
+}
+.tier-name {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+}
+.tier-price {
+  font-size: 3rem;
+  font-weight: bold;
+  letter-spacing: -2px;
+  margin-bottom: 1rem;
+}
+.features {
+  list-style: none;
+  padding: 0;
+  margin-bottom: 2rem;
+  font-size: 1.1rem;
+}
+.features li { margin-bottom: 0.5rem; }
+.features li::before { content: "> "; }
+.xl-badge {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 0.55rem;
+  margin-top: 0.5rem;
+}
+
+/* === PURCHASE FORM === */
+.purchase-panel {
+  font-family: 'VT323', monospace;
+}
+.retro-input {
+  width: 100%;
+  padding: 0.6rem;
+  background: rgba(0, 0, 0, 0.3);
+  border: 2px solid #FFAC00;
+  color: #FFAC00;
+  font-family: 'VT323', monospace;
+  font-size: 1.2rem;
+  outline: none;
+}
+.retro-input::placeholder {
+  color: #cc8a00;
+  opacity: 0.5;
+}
+.retro-input:focus {
+  box-shadow: 0 0 0 1px #FFAC00;
+}
+.retro-label {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 0.55rem;
+  margin-bottom: 0.3rem;
+  display: block;
+}
+.retro-file-label {
+  display: block;
+  padding: 0.6rem;
+  background: rgba(0, 0, 0, 0.3);
+  border: 2px dashed #FFAC00;
+  color: #cc8a00;
+  font-family: 'VT323', monospace;
+  font-size: 1rem;
+  text-align: center;
+  cursor: pointer;
+}
+.retro-file-label:hover {
+  border-style: solid;
+  color: #FFAC00;
+}
+
+/* === FOOTER === */
+.retro-footer {
+  margin-top: 6rem;
+  border-top: 2px solid #FFAC00;
+  padding: 2rem 0;
+  font-size: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+.retro-footer a:hover {
+  text-decoration: underline;
+}
+
+/* === TOOLTIP === */
+.retro-tooltip {
+  background: rgba(0, 0, 0, 0.85);
+  border: 2px solid #FFAC00;
+  padding: 0.5rem 0.75rem;
+  max-width: 200px;
+  font-family: 'VT323', monospace;
+}
+
+/* === ANIMATIONS === */
+.ticker {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 0.8rem;
+  animation: blink 1s step-end infinite;
+}
+@keyframes blink {
+  50% { opacity: 0; }
+}
+.glitch-hover:hover {
+  animation: glitch 0.3s cubic-bezier(.25, .46, .45, .94) both infinite;
+  color: #fff;
+}
+@keyframes glitch {
+  0% { transform: translate(0) }
+  20% { transform: translate(-2px, 2px) }
+  40% { transform: translate(-2px, -2px) }
+  60% { transform: translate(2px, 2px) }
+  80% { transform: translate(2px, -2px) }
+  100% { transform: translate(0) }
+}
+
+/* === GRID CONTROLS === */
+.retro-controls {
+  position: absolute;
+  bottom: 1rem;
+  left: 1rem;
+  z-index: 10;
+  display: flex;
+  gap: 0.25rem;
+}
+.retro-controls button {
+  padding: 0.4rem 0.6rem;
+  background: rgba(0, 0, 0, 0.7);
+  border: 2px solid #FFAC00;
+  color: #FFAC00;
+  font-family: 'Press Start 2P', cursive;
+  font-size: 0.6rem;
+  cursor: pointer;
+}
+.retro-controls button:hover {
+  background: #FFAC00;
+  color: #AA0082;
+}
+
+/* === SCROLLBAR === */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: #AA0082; }
+::-webkit-scrollbar-thumb { background: #FFAC00; }
+
+/* === RESPONSIVE === */
+@media (max-width: 1024px) {
+  .pricing-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 900px) {
+  .hero { grid-template-columns: 1fr; }
+  .hero-text { font-size: 1.8rem; }
+  .section-header { font-size: 0.9rem; flex-direction: column; gap: 0.5rem; }
+  .retro-header { flex-direction: column; gap: 0.5rem; font-size: 1rem; }
+}
+@media (max-width: 600px) {
+  .layout-frame { padding: 1rem; }
+  .hero-text { font-size: 1.3rem; }
+  .pricing-grid { grid-template-columns: 1fr; }
 }

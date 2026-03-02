@@ -77,7 +77,7 @@ export default function GridCanvas({
     if (!osc) return;
     const ctx = osc.getContext("2d")!;
 
-    ctx.fillStyle = "#06080f";
+    ctx.fillStyle = "#1a0014";
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
     // Dot grid pattern
@@ -173,7 +173,7 @@ export default function GridCanvas({
     const tileBlocks = activeTileBlocksRef.current;
 
     ctx.clearRect(0, 0, width, height);
-    ctx.fillStyle = "#030712";
+    ctx.fillStyle = "#1a0014";
     ctx.fillRect(0, 0, width, height);
 
     ctx.save();
@@ -421,7 +421,7 @@ export default function GridCanvas({
   }, []);
 
   return (
-    <div ref={containerRef} className="relative w-full h-full overflow-hidden bg-[#030712] rounded-lg">
+    <div ref={containerRef} className="relative w-full h-full overflow-hidden bg-[#1a0014]">
       <canvas
         ref={canvasRef}
         className={`touch-none ${activeTileBlocks && !selection ? "cursor-crosshair" : "cursor-grab active:cursor-grabbing"}`}
