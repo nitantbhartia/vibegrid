@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { stripe } from "@/lib/stripe";
+import { getStripe } from "@/lib/stripe";
 import { getPricePerBlock } from "@/lib/pricing";
 import { getRandomColor, GRID_WIDTH, GRID_HEIGHT } from "@/lib/grid";
 
@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Create Stripe Checkout Session
-    const session = await stripe.checkout.sessions.create({
+    const session = await getStripe().checkout.sessions.create({
       payment_method_types: ["card"],
       line_items: [
         {
